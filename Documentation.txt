@@ -1,0 +1,160 @@
+📚 End-to-End CI/CD Pipeline Implementation
+Project: Online Ticketing and Event Management Application
+This document provides the full, step-by-step CI/CD pipeline code and configuration required to automate the build, security scanning, and deployment of the "Book My Show" application to AWS EKS using Jenkins and Ansible.
+
+Lunch EC2-t2large-29gb-Sg-Alltreaffic
+sudo su
+apt update
+wget https://github.com/rishad3855/OnlineTicketPlatform-BMS/raw/refs/heads/patch-1/install_ci_cd_tools.sh
+
+http://<nodeippublic>:8080 -jenkins
+http://<nodeippublic>:9000 -sonarqube
+
+-----Plugin Requirements (Manage Jenkins -> Plugins)Install these plugins to enable the specific steps and integrations used in your Jenkinsfile.
+ManageJenkin/Plugins/Available plugins
+
+Plugin Name------------------  ,Purpose in Pipeline-----------------------------------
+Pipeline stage                 ,The core engine for running Declarative Pipelines.
+Git Plugin                     ,For the git step in the 'Checkout' stage.
+SonarQube Scanner              ,Provides the withSonarQubeEnv step.
+OWASP Dependency-Check         ,Provides the dependencyCheck and dependencyCheckPublisher steps.
+Amazon ECR                     ,"Can simplify ECR login, though your script uses the aws cli method."
+AWS Credentials                ,Allows secure storage and injection of AWS IAM credentials.
+Email Extension                ,Provides the emailext step for post-build notifications.
+Kubernetes CLI                 ,"While not strictly required (since you use the aws eks update-kubeconfig command), it can be helpful for general K8s interaction."
+NodeJS Plugin                  ,Enables the tools { nodejs 'node23' } configuration.
+
+-------Credentials
+Go to Manage Jenkins → Credentials and ensure you have:
+Sonar-token: Secret text with your SonarQube token (used in waitForQualityGate step).​
+docker: Username/password credentials for Docker Hub (used in withDockerRegistry(credentialsId: 'docker')).
+AWS credentials (if you use a credentialsId for AWS; otherwise instance role is fine).
+Emai:username/password-mailid/apppassword from your managegoogle account
+
+1. Configure SonarQube server
+In Jenkins UI go to: Manage Jenkins → Configure System.
+Find SonarQube servers and click Add SonarQube.
+Fill in:
+Name: sonar-server (must match what you use in withSonarQubeEnv('sonar-server')).
+Server URL: http://<your-EC2-public-ip>:9000 (or http://localhost:9000 if Jenkins and Sonar are same machine).
+Server authentication token:Sonar-token
+
+2. Configure SonarScanner tool
+Go to Manage Jenkins → Global Tool Configuration.
+Scroll to SonarQube Scanner (or SonarScanner).
+Click Add SonarQube Scanner and set:
+Name: sonar-scanner (must match SCANNER_HOME = tool 'sonar-scanner' in your pipeline).
+Check Install automatically and choose the default latest version.
+
+3. Configure JDK, NodeJS, Docker, OWASP, Trivy tools
+Still in Global Tool Configuration:
+Under JDK, add jdk17 (name must match your tools { jdk 'jdk17' }).
+Under NodeJS, add node23 (matches node23 in your pipeline).
+Under OWASP Dependency-Check, add a tool named DP-Check (matches odcInstallation: 'DP-Check')
+
+4.Configure SMTP in Jenkins
+In Jenkins UI go to Manage Jenkins → Configure System.
+Scroll to E-mail Notification (basic) and Extended E-mail Notification (for emailext).
+Fill E-mail Notification:
+SMTP server: e.g. for Gmail smtp.gmail.com; for Outlook smtp.office365.com.
+Click Advanced and set:
+Use SMTP Authentication: check.
+User Name: your full email address (for Gmail, must be the account used to create the app password).
+Password: app‑password 
+Use SSL or Use TLS:
+SMTP Port: usually 465.
+
+5.Steps in SonarQube UI
+Log in to SonarQube as an admin.
+Go to Administration → Configuration → Webhooks (or Administration → Webhooks, depending on version).​
+Click Create.
+Fill the form:
+Name: Jenkins or jenkins-webhook.
+URL: http://<JENKINS_URL>/sonarqube-webhook/.
+Secret: leave empty for now (simpler) or set a random string if you want signature verification later.​
+
+A. AWS EKS Cluster Creation (using eksctl)
+The following command creates the target cluster named bms-eks
+
+aws configure
+AWS Access Key ID [None]: ------------------------
+AWS Secret Access Key [None]: ---------------------
+Default region name [None]: ap-south-1
+Default output format [None]: 
+
+Bash
+
+eksctl create cluster \
+  --name=bms-eks \
+  --region=ap-south-1 \
+  --version=1.34 \
+  --nodegroup-name=standard-workers \
+  --node-type=t3.medium \
+  --nodes=2 \
+  --nodes-min=1 \
+  --nodes-max=4
+
+aws eks describe-cluster --name bms-eks
+
+
+B. AWS ECR  Creation (using eksctl)
+
+aws ecr create-repository \
+    --repository-name bookmyshow-app \
+    --region ap-south-1 \
+    --image-tag-mutability MUTABLE \
+    --image-scanning-configuration scanOnPush=true
+
+
+aws ecr describe-repositories \
+    --repository-names bookmyshow-app \
+    --region ap-south-1
+
+
+-------------Create a github-Webhook
+setting-webhook
+http://jenkins url/github-webhook/
+
+
+------Jenkins Pipeline Script (Jenkinsfile)
+This declarative pipeline integrates security, testing, Dockerization, and deployment stages.
+
+📝 Key Environment Variables
+Variable	Value	Purpose
+AWS_ACCOUNT_ID	123456789012	Must be replaced with your actual AWS ID.
+IMAGE_TAG	${env.BUILD_NUMBER}	Dynamic tag for version control.
+ECR_URI	...dkr.ecr.us-east-1.amazonaws.com/bookmyshow-app	Full ECR URI for pushing the image.
+EKS_CLUSTER_NAME	kastro-eks	Target Kubernetes Cluster.
+
+
+
+2. Ansible Playbook Code
+This playbook runs locally on the Jenkins server (which acts as the Ansible Control Node) and uses the K8s module to apply your Kubernetes manifests.
+
+📜 Ansible Playbook (ansible/deploy_to_eks.yml)
+YAML
+
+3. Kubernetes Manifest Template
+This manifest defines the Deployment (3 replicas) and Service (LoadBalancer) resources. Ansible substitutes the image URL here.
+
+⚙️ K8s Manifest Template (k8s/deployment.yml.j2)
+YAML
+
+# k8s/deployment.yml.j2
+
+4. EC2 and EKS Creation Commands (Reference)
+Before running the pipeline, ensure your EKS cluster and Jenkins environment are provisioned.
+
+
+
+
+
+B. Jenkins/Ansible EC2 Setup (Prerequisites)
+The EC2 instance hosting Jenkins and Ansible must have these tools installed:
+
+Tool	Purpose
+AWS CLI	Required for ECR login and updating EKS kubeconfig.
+Ansible	Core deployment engine.
+kubectl	Command-line tool for interacting with the EKS cluster.
+Docker	Used for building and pushing the application image.
+IAM Role	Must be attached to the EC2 instance, providing permissions for ECR and EKS management.

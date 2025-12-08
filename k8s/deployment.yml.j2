@@ -30,7 +30,7 @@ metadata:
   labels:
     app: ticketing-app
 spec:
-  type: LoadBalancer # Creates an AWS Elastic Load Balancer (ELB)
+  type: Nodeport # Creates an AWS Elastic Load Balancer (ELB)
   selector:
     app: ticketing-app
   ports:

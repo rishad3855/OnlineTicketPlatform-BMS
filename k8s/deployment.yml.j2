@@ -19,7 +19,7 @@ spec:
         # Ansible will inject the full ECR path and dynamic tag here
         image: "{{ image_full_uri }}" 
         ports:
-        - containerPort: 4000
+        - containerPort: 3000
         - containerPort: 9090
 
 ---
@@ -38,7 +38,7 @@ spec:
     - name: http-app
       protocol: TCP
       port: 80         # External Load Balancer Port
-      targetPort: 4000 # Container Por
+      targetPort: 3000 # Container Por
       nodePort: 30080
     - name: http
       protocol: TCP

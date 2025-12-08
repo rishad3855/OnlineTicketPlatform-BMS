@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: bookmyshow-app-monitor
+  namespace: default # Assumes your app is in the 'default' namespace
+  labels:
+    # IMPORTANT: Must match the selector label used in the Helm installation
+    release: prometheus-stack 
+spec:
+  selector:
+    matchLabels:
+      app: ticketing-app # Matches the labels on your app's Deployment/Service
+  namespaceSelector:
+    matchNames:
+      - default
+  endpoints:
+  - port: http # This needs a named port in your Service (see D below)
+    path: /metrics
+    interval: 15s

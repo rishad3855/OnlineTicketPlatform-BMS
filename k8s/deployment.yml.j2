@@ -35,7 +35,8 @@ spec:
   selector:
     app: ticketing-app
   ports:
-    - protocol: TCP
+    - name: http-app
+      protocol: TCP
       port: 80         # External Load Balancer Port
       targetPort: 4000 # Container Por
       nodePort: 30080

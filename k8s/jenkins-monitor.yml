@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-metrics
+  namespace: monitoring
+  labels:
+    app: jenkins
+spec:
+  ports:
+  - name: metrics-http
+    port: 8080
+    targetPort: 8080
+
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: jenkins-metrics
+  namespace: monitoring
+  labels:
+    app: jenkins
+subsets:
+  - addresses:
+      - ip:  "172.31.41.179" # !!! REPLACE with your Jenkins EC2 private IP address !!!
+    ports:
+      - port: 8080
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jenkins-monitor
+  namespace: monitoring
+  labels:
+    release: prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: jenkins
+  endpoints:
+  - port: metrics-http
+    path: /prometheus/ # The default path for Jenkins Prometheus Metrics Plugin
+    interval: 30s

@@ -10,14 +10,39 @@
     # ----------------------------------------------------
     # TASK 1: Deploy Kube-Prometheus Stack (Monitoring Base)
 
+   # In your ansible/deploy_to_eks.yml playbook, under tasks:
+
+    # 1. Ensure Helm Repository is added (Fixes "repo prometheus-community not found")
+    - name: Add Prometheus community Helm repository
+      community.kubernetes.helm_repository:
+        name: prometheus-community
+        repo_url: https://prometheus-community.github.io/helm-charts
+        state: present
+
+    # 2. Ensure 'monitoring' Namespace exists
+    - name: Ensure 'monitoring' namespace exists
+      community.kubernetes.k8s:
+        name: monitoring
+        api_version: v1
+        kind: Namespace
+        state: present
+        kubeconfig: "{{ kubeconfig_path }}"
+
+    # 3. Deploy Kube-Prometheus Stack (Fixes "missing required arguments")
     - name: Ensure kube-prometheus-stack is deployed via Helm
       community.kubernetes.helm: 
-        # ... (other parameters remain the same) ...
+        # 🚨 FIX: ADDED RELEASE NAME AND NAMESPACE (REQUIRED ARGUMENTS)
+        name: prometheus-stack             
+        namespace: monitoring             
+        chart: prometheus-community/kube-prometheus-stack
+        release_state: present
+        update_repo: true
+        kubeconfig: "{{ kubeconfig_path }}"
         values:
-          # 🚨 CRITICAL CHANGE: Disable Grafana installation in EKS
+          # Disable Grafana as it's running externally on the EC2 instance
           grafana:
             enabled: false
-          # Expose the Prometheus Server Service via NodePort
+          # Expose Prometheus via NodePort for the external Grafana EC2 to access
           prometheus:
             service:
               type: NodePort

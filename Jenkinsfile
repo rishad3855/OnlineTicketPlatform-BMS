@@ -113,6 +113,11 @@ pipeline {
                     # 1. Install required Ansible collection
                     ansible-galaxy collection install community.kubernetes
                     
+                    echo "--- 2. Add Prometheus Helm Repository ---"
+                    # FIX: Adding the repo so Helm CLI knows where to find the chart
+                    /usr/local/bin/helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                    /usr/local/bin/helm repo update
+                    
                     echo "Executing Ansible Playbook..."
                     # Execute Ansible, passing the dynamic image tag and ECR URI
                     ansible-playbook -i localhost, ${ANSIBLE_PLAYBOOK} \

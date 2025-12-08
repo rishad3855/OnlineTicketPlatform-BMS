@@ -9,20 +9,18 @@
   tasks:
     # ----------------------------------------------------
     # TASK 1: Deploy Kube-Prometheus Stack (Monitoring Base)
-    # ----------------------------------------------------
+
     - name: Ensure kube-prometheus-stack is deployed via Helm
-      # This task installs Prometheus, Grafana, and Alertmanager
       community.kubernetes.helm: 
-        name: prometheus-stack
-        chart_ref: prometheus-community/kube-prometheus-stack
-        release_namespace: monitoring
-        create_namespace: true
-        kubeconfig: "{{ kubeconfig_path }}"
-        state: present
-        # Setting Grafana service type to NodePort is usually not necessary 
-        # as access is often via port-forwarding or a separate Ingress, 
-        # but leaving it as default or LoadBalancer simplifies initial access.
-        # [cite_start]We assume Prometheus monitoring deployment is to meet the project goal[cite: 28].
+        # ... (other parameters remain the same) ...
+        values:
+          # 🚨 CRITICAL CHANGE: Disable Grafana installation in EKS
+          grafana:
+            enabled: false
+          # Expose the Prometheus Server Service via NodePort
+          prometheus:
+            service:
+              type: NodePort
 
     # ----------------------------------------------------
     # TASK 2: Deploy Custom Application and Service Monitors

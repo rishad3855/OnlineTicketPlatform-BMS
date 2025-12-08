@@ -33,10 +33,10 @@
       community.kubernetes.helm: 
         name: prometheus-stack             
         namespace: monitoring             
-        # 🚨 FIX: Using 'chart_ref' to satisfy the module's explicit requirement
         chart_ref: prometheus-community/kube-prometheus-stack 
         release_state: present
-        update_repo: true
+        # 🚨 FIX: Replaced 'update_repo' with the supported 'update_repo_cache'
+        update_repo_cache: true 
         kubeconfig: "{{ kubeconfig_path }}"
         values:
           # Disable Grafana as it's running externally on the EC2 instance

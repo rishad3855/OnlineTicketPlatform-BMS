@@ -20,6 +20,7 @@ spec:
         image: "{{ image_full_uri }}" 
         ports:
         - containerPort: 4000
+        - containerPort: 9090
 
 ---
 
@@ -30,10 +31,15 @@ metadata:
   labels:
     app: ticketing-app
 spec:
-  type: Nodeport # Creates an AWS Elastic Load Balancer (ELB)
+  type: NodePort # Creates an AWS Elastic Load Balancer (ELB)
   selector:
     app: ticketing-app
   ports:
     - protocol: TCP
       port: 80         # External Load Balancer Port
       targetPort: 4000 # Container Por
+      nodePort: 30080
+    - name: http
+      protocol: TCP
+      port: 9090       # Internal ClusterIP port for metrics
+      targetPort: 9090

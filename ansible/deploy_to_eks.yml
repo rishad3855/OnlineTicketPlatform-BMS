@@ -27,14 +27,14 @@
         kind: Namespace
         state: present
         kubeconfig: "{{ kubeconfig_path }}"
-
-    # 3. Deploy Kube-Prometheus Stack (Fixes "missing required arguments")
+        
+    # 3. Deploy Kube-Prometheus Stack (Fixes "missing required arguments" and "missing: chart_ref")
     - name: Ensure kube-prometheus-stack is deployed via Helm
       community.kubernetes.helm: 
-        # 🚨 FIX: ADDED RELEASE NAME AND NAMESPACE (REQUIRED ARGUMENTS)
         name: prometheus-stack             
         namespace: monitoring             
-        chart: prometheus-community/kube-prometheus-stack
+        # 🚨 FIX: Using 'chart_ref' to satisfy the module's explicit requirement
+        chart_ref: prometheus-community/kube-prometheus-stack 
         release_state: present
         update_repo: true
         kubeconfig: "{{ kubeconfig_path }}"

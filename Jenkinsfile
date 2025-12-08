@@ -109,6 +109,9 @@ pipeline {
                     echo "Configuring kubectl for EKS cluster: ${EKS_CLUSTER_NAME}"
                     # Update Kubeconfig, granting Jenkins machine access to EKS
                     aws eks update-kubeconfig --name ${EKS_CLUSTER_NAME} --region ${AWS_REGION} --kubeconfig kubeconfig 
+
+                    # 1. Install required Ansible collection
+                    ansible-galaxy collection install community.kubernetes
                     
                     echo "Executing Ansible Playbook..."
                     # Execute Ansible, passing the dynamic image tag and ECR URI
